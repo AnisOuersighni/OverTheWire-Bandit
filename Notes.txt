@@ -1,0 +1,680 @@
+
+-----------------------ROT 13 ( level 11 ) 
+
+	
+	cat data.txt |  tr 'A-Za-z' 'N-ZA-Mn-za-m'     ===>  	character Mapping:
+		
+	    Uppercase Letters:
+		Characters 'A' through 'M' (positions 0-12 in SET1) are mapped to 'N' through 'Z' (positions 13-25 in SET2).
+		Characters 'N' through 'Z' (positions 13-25 in SET1) are mapped to 'A' through 'M' (positions 0-12 in SET2).
+
+	    Lowercase Letters:
+		Characters 'a' through 'm' (positions 0-12 in SET1) are mapped to 'n' through 'z' (positions 13-25 in SET2).
+		Characters 'n' through 'z' (positions 13-25 in SET1) are mapped to 'a' through 'm' (positions 0-12 in SET2).
+		
+		Addition
+
+		If we want to use ROT13 more often in the future, it might make sense to create a ‘alias’ so that we can use the name rot13 (and rot5 for numbers) as command and not tr:
+
+			alias rot13="tr 'A-Za-z' 'N-ZA-Mn-za-m'"
+			alias rot5="tr '0-9' '5-90-4'"
+
+
+
+
+
+
+-----------------------Hexdumps ( xdd / gzip   : level 13 ) !
+	
+	
+	Hexdumps are often used when we want to look at data that cannot be represented in strings and therefore is not readable, so it is easier to look at the hex values. A hexdump has three main columns. 
+	The first shows the address, the second the hex representation of the data on that address and the last shows the actual data as strings (with ‘.’ being hex values that cannot be represented as a string). 
+	Many hex editors exist just pick the one you like most.
+	
+
+		For the command line xxd can be used.   	    xxd    <input_file> 	<output_file> 		creates hexdumps. When using the     -r       flag, it reverts the hexdump.
+
+
+	Hexdumps can be used to figure out the type of a file. Each file type has a magic number/file signature. You can find lists with a collection of these different file signatures online. 
+	The file command also uses this method (and more beyond that). This is especially important to know because sometimes files might not have the correct or any file ending to identify its type.
+	
+	
+	Compression is a method of encoding that aims to reduce the original size of a file without losing information (or only losing as little as possible).
+
+	    *** gzip ***  is a command to compress or decompress (-d) files. A ‘gzip’ file generally ends with  *** .gz ***.
+	    *** bzip2 *** is another command which allows for compressing and decompressing (-d) files. A ‘bzip2’ file generally ends with  *** .bz2 ***.
+
+
+	An Archive File is a file that contains one or multiple files and their metadata. This can allow easier portability.
+
+	     *** tar ***  is a command that creates archive files (-cf). It also allows extracting these files again (-xf). A tar archive generally ends with  *** .tar ***.
+	     
+	     
+Solution
+
+	I have separated the task into three sub-tasks. Setting up a directory, reverting the hexdump and finally decompressing.
+	
+	Create Directory and Move file:
+		
+		bandit12@bandit:/tmp$ mktemp -d
+		/tmp/tmp.W5t1vua6G9
+		mv data.txt hexdump_data
+		
+		
+	Revert hexdump of the file : 
+	
+		cat hexdump_data | head
+		
+			00000000: 1f8b 0808 0650 b45e 0203 6461 7461 322e  .....P.^..data2.
+			00000010: 6269 6e00 013d 02c2 fd42 5a68 3931 4159  bin..=...BZh91AY
+			00000020: 2653 598e 4f1c c800 001e 7fff fbf9 7fda  &SY.O...........
+			00000030: 9e7f 4f76 9fcf fe7d 3fff f67d abde 5e9f  ..Ov...}?..}..^.
+			00000040: f3fe 9fbf f6f1 feee bfdf a3ff b001 3b1b  ..............;.
+			00000050: 5481 a1a0 1ea0 1a34 d0d0 001a 68d3 4683  T......4....h.F.
+			00000060: 4680 0680 0034 1918 4c4d 190c 4000 0001  F....4..LM..@...
+			00000070: a000 c87a 81a3 464d a8d3 43c5 1068 0346  ...z..FM..C..h.F
+			00000080: 8343 40d0 3400 0340 66a6 8068 0cd4 f500  .C@.4..@f..h....
+			00000090: 69ea 6800 0f50 68f2 4d00 680d 06ca 0190  i.h..Ph.M.h.....
+		
+	However, we want to operate on the actual data. Therefore, we revert the hexdump and get the actual data.
+
+1
+		bandit12@bandit:/tmp/tmp.W5t1vua6G9$ xxd -r hexdump_data compressed_data
+		bandit12@bandit:/tmp/tmp.W5t1vua6G9$ ls
+			compressed_data  hexdump_data
+
+	The actual data looks like this when printed to the console:
+		
+
+		$ cat compressed_data | head
+		
+			P ^data2.bin=  BZh91AY&SY O    ڞOv   }?  }  ^          ߣ  ;    ▒4  ▒h F F  4▒LM
+						                                                       @  z  FM  C hF C@ 4@f  h
+			4hh ▒=C% >X▒, k   1  GY                                                                                  i hPh Mh
+			 J 쌑Oϊ  {RBp Qix Y Z!d  j ( 搿ݳ  /  A # A  F  0P  v  ` "3 
+
+						                    d bX?  z  2  <  A  n}
+			5(3A  
+			      wO R    6 XS{ 
+			   9?L P yB  =z m? L Nt* 7{qP   %" w9 qm4   N3 6   K  H䋑[  }!
+						                                      d  3A4$  M~ \ɠJ C kUƦ\   \ FSN  &= [  q   \) $:  H t&/ (    ]  BB9<s   h=
+
+		
+		
+	Repeatedly decompress :
+		
+		We now need to decompress the data. To figure out what decompression we need to use, ***  look at the first bytes in the hexdump to find the file signature. ***
+		We can search for these first bytes in a list of file signatures  *** https://en.wikipedia.org/wiki/List_of_file_signatures   ***   .
+		
+		
+		
+		GZIP : 
+			
+			For gzip compressed files the header is    ***    \x1F\x8B\x08       ***  . Looking at the first line, we see that these are the first bytes of the file.
+				
+				$  cat hexdump_data 
+				00000000: 1f8b 0808 0650 b45e 0203 6461 7461 322e  .....P.^..data2.
+		
+			Now we can add the correct file ending, by renaming the file and decompress the file with gzip -d:
+				
+				$ mv compressed_data compressed_data.gz
+				$ gzip -d compressed_data.gz 
+				
+			
+				Note: For ‘gzip’ renaming the file with the correct ending is necessary for the other commands it doesn’t have to be done.
+			
+			
+		BZIP2  :
+			
+			However, the data is still not fully decompressed, so we look at the first bytes again:
+			
+				$ xxd compressed_data 
+				00000000: 425a 6839 3141 5926 5359 8e4f 1cc8 0000  BZh91AY&SY.O....
+			
+			This time we have a different magic number. Quick googling tells us that ***    BZ (= ‘425a’)    ***   is the file signature for bzip and the next two bytes ***   h (= ‘68’) indicate the version  ***,
+			 in this case, it is version 2. So we can rename the file with the appropriate file ending (.bz2) and decompress it with bzip2 -d
+			
+				$ mv compressed_data compressed_data.bz2
+				$ bzip2 -d compressed_data.bz2
+			
+		
+		GZIP :
+			
+			And the file is still compressed. xxd shows that it is ‘gzip’ compressed again. So we repeat the previous steps, renaming and decompressing.
+			Now the output still doesn’t look right, but we can see some string.
+		
+		
+		Tar archives :
+			
+			Using either cat compressed_data or xxd compressed_data | head (‘head’ to only get the first 10 lines), we can see the ‘data5.bin’ string, which is a filename.
+			
+			
+				$cat compressed_data 
+				
+					data5.bin0000644000000000000000000002400013655050006011240 0ustar  rootrootdata6.bin0000644000000000000000000000033613655050006011247 0ustar  rootrootBZh91AY&SY
+										  +
+					 A  z <jA  j                                  Y @ U  Z  t!ހ  u    
+						     @ѣ   ! h▒iM 
+					    BȨ$fz&1* Ԇf  zG g} + Q P(f}   @Թ  ▒   Tj 1 P EƮ  ߨ   @Ț  = s  *   As*Y  !$r  5   Es ]  B@ 0 ,
+					bandit12@bandit:/tmp/tmp.W5t1vua6G9$ xxd compressed_data | head                                                      
+					00000000: 6461 7461 352e 6269 6e00 0000 0000 0000  data5.bin.......
+					00000010: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+					00000020: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+					00000030: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+					00000040: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+					00000050: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+					00000060: 0000 0000 3030 3030 3634 3400 3030 3030  ....0000644.0000
+					00000070: 3030 3000 3030 3030 3030 3000 3030 3030  000.0000000.0000
+					00000080: 3030 3234 3030 3000 3133 3635 3530 3530  0024000.13655050
+					00000090: 3030 3600 3031 3132 3430 0020 3000 0000  006.011240. 0...
+			
+			It seems like we now have an archive. So we use tar to extract the file:
+			
+				
+
+				$ mv compressed_data compressed_data.tar
+				$ tar -xf compressed_data.tar 
+				$ ls
+					compressed_data.tar  data5.bin  hexdump_data
+
+			Now, ‘data5.bin’ seems to be another archive with a file called ‘data6.bin’. So we extract the file again.
+				
+				$ tar -xf data5.bin
+		
+		
+		BZIP2  :
+			
+			The file ‘data6.bin’ seems to be bzip2 compressed again.
+			
+			
+				$  xxd data6.bin 
+					00000000: 425a 6839 3141 5926 5359 080c 2b0b 0000  BZh91AY&SY..+...
+					
+				$ bzip2 -d data6.bin
+					bzip2: Can't guess original name for data6.bin -- using data6.bin.out
+				$ ls
+					compressed_data.tar  data5.bin  data6.bin.out  hexdump_data
+					
+				
+		Tar Archive : 
+			
+			‘data6.bin.out’ shows another file name ‘data8.bin’ again. So we extract this file.
+			
+				$ tar -xf data6.bin.out
+				$ ls
+					compressed_data.tar  data5.bin  data6.bin.out  data8.bin  hexdump_data
+			
+			
+				
+		GZIP :
+			Finally, we have to do one more decompression with gzip and we get a readable file with the password.
+				
+				$ xxd data8.bin
+					00000000: 1f8b 0808 0650 b45e 0203 6461 7461 392e  .....P.^..data9.
+				
+				$ gzip -d data8.gz
+				
+				$ cat data8
+					The password is 8ZjyCRiBWFYkneahHwxCv3wb2a1ORpYL
+					
+					
+					
+					
+					
+			
+			
+------------------------------------------ FILE DESCRIPTOR AND  HARD/SOFT LINKS
+
+
+				
+	
+		Here is how we get to that picture:
+		
+		    Create a name myfile.txt in the file system that points to a new inode (which contains the metadata for the file and points to the blocks of data that contain its contents, i.e. the text "Hello, World!":
+		
+		    $ echo 'Hello, World!' > myfile.txt
+		
+		    Create a hard link my-hard-link to the file myfile.txt, which means "create a file that should point to the same inode that myfile.txt points to":
+		
+		    $ ln myfile.txt my-hard-link
+		
+		    Create a soft link my-soft-link to the file myfile.txt, which means "create a file that should point to the file myfile.txt":
+		
+		    $ ln -s myfile.txt my-soft-link
+		
+		Look what will now happen if myfile.txt is deleted (or moved): my-hard-link still points to the same contents, and is thus unaffected, whereas my-soft-link now points to nothing. Other answers discuss the pros/cons of each.
+		
+	
+	
+
+File descriptor 
+	
+	NAME
+		       /proc/pid/fd/ - file descriptors
+		
+	DESCRIPTION
+		       /proc/pid/fd/
+		 This  is  a  subdirectory containing one entry for each file which the process has open, named by its file descriptor, and which is a symbolic link to the actual file.  Thus, 0 is standard input, 1 standard output, 2 standard error, and so on.
+		
+		For file descriptors for pipes and sockets, the entries will be symbolic links whose content is the file type with the inode.  A readlink(2) call on this file returns a string in the format:
+		
+		                  type:[inode]
+		
+		              For example, socket:[2248868] will be a socket and its inode is 2248868.  For sockets, that inode can be used to find more information in one of the files under /proc/net/.
+	
+		
+		 Programs that take a filename as a command-line argument, but don't take input from standard input if no argument is supplied, and programs that write to a file named as a command-line argument, but don't send  their output  to  standard  output  if no argument is supplied, can nevertheless be made to use standard input or standard output by using /proc/pid/fd files as command-line arguments.  For example, assuming that -i is the
+		              flag designating an input file and -o is the flag designating an output file:
+		
+		                  $ foobar -i /proc/self/fd/0 -o /proc/self/fd/1 ...
+		
+		              and you have a working filter.
+		
+		              /proc/self/fd/N is approximately the same as   /dev/fd/N in some UNIX and UNIX-like systems. 
+			Most Linux MAKEDEV scripts symbolically link /dev/fd to /proc/self/fd, in fact.
+		
+		              Most systems provide symbolic links /dev/stdin, /dev/stdout, and /dev/stderr, which respectively link to the files 0, 1, and 2 in /proc/self/fd.  Thus the example command above could be written as:
+		
+		                  $ foobar -i /dev/stdin -o /dev/stdout ...
+		
+	
+	
+	
+	
+----------------------------- OPENSSL / SOCAT level 15->16 
+
+
+OpenSSL is a library for secure communication over networks. It implements the Transport Layer Security (TLS) and Secure Sockets Layer (SSL) cryptographic protocols that are, 
+for example, used in HTTPS to secure the web traffic.
+
+openssl s_client is the implementation of a simple client that connects to a server using SSL/TLS.
+
+Since the task states that the password can be retrieved using SSL encryption, I connect to the localhost server with the OpenSSL client and send the password from this level.
+The server then sends back the password for the next level.
+
+bandit15@bandit:~$ openssl s_client -connect localhost:30001
+...
+BfMYroe26WYalil77FoDi9qh59eK5xNr
+Correct!
+cluFn7wTiGryunymYOu4RcffSxQluehd
+
+
+Or we can use socat with OPENSSL keyword :
+
+$ socat - OPENSSL:localhost:30001,verify=0
+
+
+Here’s what each part means:
+
+    		-: 	Read from standard input.
+    		
+    		OPENSSL:localhost:30001,verify=0: 	Connect to the SSL server at localhost on port 30001. The verify=0 option disables certificate verification. 
+    		For production, you might want to enable verification with verify=1 and provide the CA certificate with cafile=ca.pem.
+	
+	
+	
+
+
+
+
+------------------------ SUID  /eUID
+
+
+
+SUID: 
+
+Suid is a special permission. It will replace the x of the user permission. It means the binary will be run as the owner of the binary, not the one executing it. 
+To give a binary suid permissions the following command needs to be used: chmod u+s <filename>.
+
+
+
+eUID	
+euid, or Effective User ID, is a concept used in Unix-like operating systems to manage permissions and access control for processes. 
+It plays a key role in how processes execute and interact with the system.
+
+
+Understanding euid : 
+
+
+    User Identification in Unix-like Systems:
+    
+Real User ID (ruid): This is the ID of the user who started the process.
+Effective User ID (euid): This determines the permissions the process has. It affects what files and resources the process can access. 
+For example, a process running with the euid of a root user has elevated privileges compared to a process with a regular user ID.
+
+    Usage in Privilege Management:
+    
+When a process executes a program with elevaed privileges (e.g., a program with the SUID bit set), the effective user ID of the process may change to that of the file owner, 
+allowing it to perform actions beyond the permissions of the original user.
+
+    System Calls and euid:
+    
+Many system calls and functions in Unix-like systems check the effective user ID to determine if the caller has the necessary permissions. 
+For example, file operations, process control, and network access might be influenced by the euid.
+
+
+
+
+	$ ./bandit20-do 
+	Run a command as another user.
+	  Example: ./bandit20-do id
+	$ id
+	uid=11019(bandit19) gid=11019(bandit19) groups=11019(bandit19)
+	$ ./bandit20-do id
+	uid=11019(bandit19) gid=11019(bandit19) euid=11020(bandit20) groups=11019(bandit19)
+	$ id
+	uid=11019(bandit19) gid=11019(bandit19) groups=11019(bandit19)
+	$ ./bandit20-do cat the file 
+	
+
+
+
+Example of euid in Practice
+
+    Running a Command: 
+    	
+    	When you run a command like ls or cat, it usually operates with the euid of the user who initiated the command.
+
+    SUID Programs: 
+    
+    	If a program has the SUID (Set User ID) bit set and is owned by root, it will run with the effective user ID of root, even if launched by a regular user. 
+    	This is useful for programs that need to perform tasks requiring higher privileges.
+
+
+Commands to Check euid
+
+    ○ Using id Command:
+
+$ id -u
+
+This command returns the effective user ID of the current user.
+
+    ○  Using ps Command: To see the euid of running processes:
+
+$ ps -eo pid,euid,comm
+
+This shows the effective user ID alongside the process ID and command name.
+
+    ○ sing whoami Command:
+
+$ whoami
+
+
+
+
+
+-------------------------------------- cronjob 
+
+
+Level 22 => 23 
+
+Understanding Crontabs and Cron Directories
+
+There are two types of crontabs that can be utilized to run cron jobs:
+
+○ The system crontab – Used it to schedule system-wide jobs – The default system crontab configuration file is located at     /etc/crontab
+
+○ The user crontab – This file lets users create and edit cron jobs that only apply at the user level – Created using the crontab -e command and stored in /var/spool/cron/crontabs
+
+
+Note that crontabs created with crontab -e commands are only visible to the users who create them. They cannot be enumerated in a standard way, which is why they are considered “hidden cron jobs”. 
+Standard users cannot even access the directory where they are stored. The the only way a standard user can view their crontab is by using the crontab command.
+
+
+
+In addition to the crontabs, cron jobs can also be added to the   etc/cron.d    directory. However, this is bad practice because cron.d is mainly intended for automatic installations and updates.
+	
+
+
+Walkthrough:
+
+
+/etc/cron.d$ cat cronjob_bandit23
+
+@reboot bandit23 /usr/bin/cronjob_bandit23.sh  &> /dev/null
+* * * * * bandit23 /usr/bin/cronjob_bandit23.sh  &> /dev/null
+
+a script called cronjob_bandit23.sh  is executed every minute  by bandit23  => we take a look
+
+/etc/cron.d$ cat /usr/bin/cronjob_bandit23.sh
+#!/bin/bash
+
+myname=$(whoami)
+mytarget=$(echo I am user $myname | md5sum | cut -d ' ' -f 1)
+
+echo "Copying passwordfile /etc/bandit_pass/$myname to /tmp/$mytarget"
+
+cat /etc/bandit_pass/$myname > /tmp/$mytarget
+
+we simulate locally what could the name of tmp file be :  
+
+/etc/cron.d$ echo "I am user bandit23" |md5sum | cut -d ' ' -f 1
+8ca319486bfbbc3663ea0fbe81326349
+
+we cat the file /tmp/8ca319486bfbbc3663ea0fbe81326349    and hop we get the flag
+
+
+
+
+
+---------------------------------------------level 23 => 24
+
+what does :                	for i in * .*; do:
+
+    This is the beginning of a for loop in Bash.
+    The for loop will iterate over each item that matches the pattern specified (* .*).
+
+*:
+
+    This is a glob pattern that matches all files and directories in the current directory, excluding hidden files (those starting with a dot).
+
+.*:
+
+    This pattern matches hidden files and directories in the current directory (those whose names start with a dot).
+    Note that .* will also match the special entries . (current directory) and .. (parent directory).
+
+
+
+
+
+NOTE 	:
+
+
+Did you know that "bash" stands for "Bourne-again Shell"? Bash is the default
+user shell on many Unix-based systems. Confusingly, many shell-scripts on the
+same systems are written for "sh", which is the predecessor of "bash".
+Although any script for "sh" can be executed in "bash", the reverse is not
+always the case. Beware of any "bashisms" when you are creating your own shell
+scripts.
+
+
+
+password in /etc/bandit_pass/bandit24
+script cron is in /usr/bin/cronjob_bandit24.sh
+it executes all the files everyminute under the folder :  /var/spool/bandit24/foo
+
+
+SOlution
+
+$ mktemp -d
+/tmp/tmp.RcR1sWalTK
+
+
+chmod 777 -R /tmp/tmp.RcR1sWalTK
+touch /tmp/tmp.RcR1sWalTK/password.txt
+chmod 777 password.txt
+nano exploit.sh
+
+#!/bin/bash
+
+cat /etc/bandit_pass/bandit24 >> /tmp/tmp.RcR1sWalTK/password.txt
+
+chmod 777 exploit.sh
+cp exploit.sh /var/spool/bandit24/foo/exploit.sh
+
+and BOOM
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------- level 28=>29	
+
+git log
+git show   commit_id
+
+
+
+
+---------------------------------------------------- level 29=>30
+
+
+Git branching is another feature of the version control system. It allows you to split the development into different branches. Specifically, there is a master branch from which the software can be taken and 
+it can be separately worked on. You can change and add features while still maintaining a working master branch. Once the work is done, it can be integrated into the master branch again. This allows for 
+additional version control. You can offer a production branch with usable software, while fixing bugs or adding features in a different development branch.
+
+The basic commands for working with branches are:
+
+    git branch: 								List (-a), create, or delete branches
+    git checkout <branch_name>/git switch <branch_name>:        		 Switch branches
+    git merge: 									Join two or more branches
+
+
+SOLUTION :
+
+bandit29@bandit:/tmp/tmp.Qjbad6ocpi/repo$ cat README.md 
+# Bandit Notes
+Some notes for bandit30 of bandit.
+
+## credentials
+
+- username: bandit30
+- password: <no passwords in production!>
+
+The sentence ’no passwords in production!’ sounds like there might be more branches. So we check out, if this is the case.	
+
+
+git branch -a
+
+* master
+  remotes/origin/HEAD -> origin/master
+  remotes/origin/dev
+  remotes/origin/master
+
+
+And we were correct. We got a list of branches of this repository. Now, the most interesting one based on the description in ‘README’ would be the ‘dev’ branch. 
+Since if the password is not in the production branch, it is most likely in the development branch.
+
+To test that theory, we can switch to this branch and check its content		
+
+$ git checkout dev
+Branch dev set up to track remote branch dev from origin.
+Switched to a new branch 'dev'
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------> level 30-31:
+
+
+
+
+Git tagging is a way to mark specific points in the history of the repository. One example would be to mark release points of the software.
+ The command to see the tags is git tag. To create a tag the command is git tag -a <tag_name> -m <"tag description/message">. 
+ To see more details, like the tag message and commit, you can use the following command: git show <tag_name>
+
+
+The README does not give us any information. Checking the git tag, we find a point in the history called ‘secret’, which looks promising.
+
+
+$ git tag
+	secret
+
+$git show secret
+	47e603bb428404d265f59c42920d81e5
+
+
+
+
+
+-------------------------------------------------->  LEVEL  32-33 
+
+
+
+Linux has Variables called local variables (valid in current shell), shell variables (set up by shell) and environment variables (valid systemwide). 
+These variables have their names in uppercase only. They are defined by writing VAR_NAME=var_value in the command line. To see the content of a variable, you can write echo $VAR_NAME.
+
+To print all environment variables, you can use printenv.
+
+Some common that are good to know are:
+
+    TERM -  current terminal emulation
+    HOME - the path to home directory of currently logged in user
+    LANG - current locales settings
+    PATH - directory list to be searched when executing commands
+    PWD - pathname of the current working directory
+    SHELL/0 - the path of the current user’s shell
+    USER - currently logged-in use	
+    
+    
+   $0   => #!/bin/bash   => sera executé !
+   
+  
+
+
+
+
+
+
+
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	.
